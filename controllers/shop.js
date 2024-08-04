@@ -3,43 +3,45 @@ const Cart = require('../models/cart');
 
 exports.getProducts = (req, res, next) => {
 
-  Product.fetchAll().then(([rows,fields])=>{
+  Product.findAll().then(product=>{
     res.render('shop/product-list', {
-      prods: rows,
+      prods: product,
       pageTitle: 'All Products',
       path: '/products'
-    });
-  }).catch((e)=>{
+    }); 
+  }).catch(e=>{
     console.log(e)
   })
-
   
 };
 
 exports.getProductDetail = (req,res,next)=>{
   const pid = req.params.productid
   console.log("11pid : ",req.params.productid)
-  Product.findById(pid)
-  .then(([p])=>{
-    console.log(p[0])
-    res.render('shop/product-detail',{
-      product:p[0],
-      pageTitle:p[0].title,
-      path:'/products'
-    })
-  }).catch((e)=>{
-    console.log(e)
+Product.findByPk(pid).then(p=>{
+
+  res.render('shop/product-detail',{
+    product:p,
+    pageTitle:p.title,
+    path:'/products'
   })
+}).catch(e=>{
+  console.log(e)
+})
+
 }
 
 exports.getIndex = (req, res, next) => {
-  Product.fetchAll().then(([rows,fields])=>{
+  Product.findAll().then(product=>{
     res.render('shop/index', {
-      prods: rows,
+      prods: product,
       pageTitle: 'Shop',
       path: '/'
     });
-  });
+  }).catch(e=>{
+    console.log(e)
+  })
+ 
 };
 
 exports.getCart = (req, res, next) => {
