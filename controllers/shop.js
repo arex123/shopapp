@@ -45,20 +45,61 @@ exports.getIndex = (req, res, next) => {
 };
 
 exports.getCart = (req, res, next) => {
-  res.render('shop/cart', {
-    path: '/cart',
-    pageTitle: 'Your Cart'
-  });
+
+  req.user
+  .getCart()
+  .then(cart=>{
+    return cart.getProducts()
+  })
+  .then(products=>{
+
+    // console.log("&&&& item ",products[0]['cart-item'])
+    res.render('shop/cart', {
+      path: '/cart',
+      pageTitle: 'Your Cart',
+      products:products
+    });
+
+  }).catch(e=>{
+    console.log(e)
+  })
+
 };
 
 
 exports.postCart = (req,res,next)=>{
-  const pid = req.body.productid
-  Product.findById(pid, product => {
-    Cart.addProduct(pid, product.price);
-  });
-  res.redirect('/cart');
-}
+  const prodId = req.body.productid;
+  let ourCart;
+  let newQuantity = 1;
+  req.user
+    .getCart()
+    .then(cart => {
+      ourCart = cart;
+      return cart.getProducts({ where: { id: prodId } });
+    })
+    .then(products => {
+      let product;
+      if (products.length > 0) {
+        product = products[0];
+      }
+
+      if (product) {
+        const oldQuantity = product['cart-item'].quantity;
+        newQuantity = oldQuantity + 1;
+        return product;
+      }
+      return Product.findByPk(prodId);
+    })
+    .then(product => {
+      return ourCart.addProduct(product, {
+        through: { quantity: newQuantity }
+      });
+    })
+    .then(() => {
+      res.redirect('/cart');
+    })
+    .catch(err => console.log(err));
+};
 
 exports.getOrders = (req, res, next) => {
   res.render('shop/orders', {
@@ -73,3 +114,22 @@ exports.getCheckout = (req, res, next) => {
     pageTitle: 'Checkout'
   });
 };
+
+
+exports.deleteCartProduct=(req,res,next)=>{
+  console.log("deletig ",req.body)
+  req.user.getCart()
+  .then(cart=>{
+    return cart.getProducts({where:{id:req.body.productId}})
+  })
+  .then(product=>{
+    // console.log("products ",product[0])
+    return product[0]['cart-item'].destroy()
+   
+  })
+  .then((d)=>{
+    res.redirect('/cart')
+  }).catch(e=>{
+    console.log(e)
+  })
+}
